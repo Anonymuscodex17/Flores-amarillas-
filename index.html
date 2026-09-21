@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Para Isabelita 🌼</title>
+
+<!-- Fuentes: una manuscrita para el mensaje, una redondeada para el resto -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <main class="tarjeta">
+
+    <!-- ===== PANTALLA 1: la portada cerrada ===== -->
+    <section class="portada" id="portada">
+      <!-- Girasol dibujado en SVG, ya florecido (lo arma el JS) -->
+      <div class="flor-portada" id="florPortada"></div>
+      <h1 class="titulo-portada">Para Mi Isabelita 🌟</h1>
+      <p class="subtitulo">Feliz Día de las Flores Amarillas</p>
+      <button class="boton" id="botonAbrir">Ábreme 🌻</button>
+    </section>
+
+    <!-- ===== PANTALLA 2: el mensaje, oculto al inicio ===== -->
+    <section class="mensaje" id="mensaje">
+      <p class="linea manuscrita">Isabelita de mi corazon,</p>
+
+      <!--
+        ✏️ AQUÍ PERSONALIZAS EL MENSAJE:
+        cambia el texto de estos <p> por lo que le quieras decir.
+        Puedes agregar o quitar párrafos, cada uno aparece con su
+        propia animación (mira el JS si quieres ajustar el tiempo).
+      -->
+      <p class="linea">Hoy es un día para regalar flores amarillas a esas personas que hacen nuestra vida un poquito más bonita,</p>
+      <p class="linea">Por eso pensé en ti.</p>
+      <p class="linea">Y quise hacerte este pequeño detalle, con mucho cariño y amor. ✨</p>
+      <p class="linea manuscrita destacada">¡feliz día, coshii 🥹🌟!</p>
+
+      <div class="firma">
+        <!-- ✏️ Cambia "Tu amigo/a" por tu nombre -->
+        con cariño, Andesitoo🌟
+      </div>
+
+      <!-- ===== Cierre final: mensaje ===== -->
+      <div class="cierre-final linea">
+        <!-- ✏️ Cambia este mensaje final por el tuyo -->
+        <p class="manuscrita destacada final-texto">I love you, peque 🥹🌟</p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- El jardín: aquí es donde los girasoles se roban el show -->
+  <div class="polen" id="polen" aria-hidden="true"></div>
+  <div class="jardin" id="jardin"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
