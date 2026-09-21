@@ -1,287 +1,1359 @@
 // =========================================================
-// GIRASOLES EN SVG — se construyen por código, no son emojis
+// 🌻 JARDÍN DE FLORES AMARILLAS
+// Versión optimizada para PC + móvil
 // =========================================================
-// Cada girasol tiene: sombra de piso, tallo (se dibuja), 2 hojas,
-// una capa de pétalos traseros (más oscuros, dan volumen) y una
-// capa de pétalos delanteros + centro con brillo (efecto 3D suave).
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
 let contadorGirasoles = 0;
 
+// ---------------------------------------------------------
+// 📱 DETECTAR DISPOSITIVO
+// ---------------------------------------------------------
+
+const esMovil = window.matchMedia('(max-width: 768px)').matches;
+const pantallaPequena = window.matchMedia('(max-width: 420px)').matches;
+
+// Configuración general
+const CONFIG = {
+  movil: esMovil,
+
+  // Flores del jardín
+  floresJardin: esMovil ? 22 : 60,
+
+  // Polen
+  intervaloPolen: esMovil ? 1800 : 900,
+
+  // Animaciones
+  duracionBalanceo: esMovil ? 7 : 5,
+
+  // Pétalos
+  petalosFondo: esMovil ? 6 : 7,
+  petalosMedio: esMovil ? 7 : 9,
+  petalosFrente: esMovil ? 9 : 11
+};
+
+// ---------------------------------------------------------
+// 🛠️ CREAR ELEMENTOS SVG
+// ---------------------------------------------------------
+
 function crearElemento(tag, atributos = {}) {
-  const el = document.createElementNS(SVG_NS, tag);
-  for (const [clave, valor] of Object.entries(atributos)) {
-    el.setAttribute(clave, valor);
-  }
-  return el;
+
+  const elemento = document.createElementNS(
+    SVG_NS,
+    tag
+  );
+
+  Object.entries(atributos).forEach(([clave, valor]) => {
+    elemento.setAttribute(clave, valor);
+  });
+
+  return elemento;
 }
+
+// ---------------------------------------------------------
+// 🌼 FORMA DEL PÉTALO
+// ---------------------------------------------------------
 
 function formaPetalo(largo, ancho) {
-  return `M 0,0 C -${ancho/2},-${largo*0.5} -${ancho/3},-${largo} 0,-${largo} C ${ancho/3},-${largo} ${ancho/2},-${largo*0.5} 0,0 Z`;
+
+  return `
+    M 0,0
+    C -${ancho * 0.45},-${largo * 0.45}
+      -${ancho * 0.35},-${largo * 0.9}
+      0,-${largo}
+    C ${ancho * 0.35},-${largo * 0.9}
+      ${ancho * 0.45},-${largo * 0.45}
+      0,0
+    Z
+  `;
 }
 
-/**
- * Crea un girasol SVG con volumen (capas de pétalos + sombras)
- * y devuelve el elemento junto con una función "florecer()".
- * @param {object} tema  colores {frente:[c1,c2], atras:[c1,c2]}
- */
-function crearGirasol(anchoTotal = 90, altoTallo = 120, numPetalos = 12, escala = 1, tema = null) {
-  contadorGirasoles++;
-  const id = contadorGirasoles;
-  const altoTotal = altoTallo + 90;
-  const cx = anchoTotal / 2;
-  const baseY = altoTotal;
-  const topY = altoTotal - altoTallo;
+// ---------------------------------------------------------
+// 🌻 CREAR GIRASOL
+// ---------------------------------------------------------
 
-  // Degradado romántico por defecto si no se especifica uno
-  const paleta = tema || { frente: ['#FF8FB3', '#FFD9A0'], atras: ['#D94F79', '#F0A85C'] };
+function crearGirasol(
+  anchoTotal = 90,
+  altoTallo = 120,
+  numPetalos = 10,
+  escala = 1,
+  tema = null
+) {
+
+  contadorGirasoles++;
+
+  const id = contadorGirasoles;
+
+  const altoCabeza = 75;
+
+  const altoTotal =
+    altoTallo + altoCabeza;
+
+  const cx =
+    anchoTotal / 2;
+
+  const baseY =
+    altoTotal;
+
+  const topY =
+    altoTotal - altoTallo;
+
+
+  // -------------------------------------------------------
+  // 🎨 PALETA
+  // -------------------------------------------------------
+
+  const paleta = tema || {
+    frente: ['#F5B233', '#FFE58A'],
+    atras: ['#C97A1B', '#E8992A']
+  };
+
+
+  // -------------------------------------------------------
+  // SVG
+  // -------------------------------------------------------
 
   const svg = crearElemento('svg', {
+
     width: anchoTotal,
+
     height: altoTotal,
-    viewBox: `0 0 ${anchoTotal} ${altoTotal}`
+
+    viewBox:
+      `0 0 ${anchoTotal} ${altoTotal}`
+
   });
 
-  // ---- Degradados propios de este girasol (ids únicos) ----
-  const defs = crearElemento('defs');
 
-  const gradDelantero = crearElemento('linearGradient', { id: `petaloD-${id}`, x1: '0', y1: '1', x2: '0', y2: '0' });
-  gradDelantero.appendChild(crearElemento('stop', { offset: '0%', 'stop-color': paleta.frente[0] }));
-  gradDelantero.appendChild(crearElemento('stop', { offset: '100%', 'stop-color': paleta.frente[1] }));
-  defs.appendChild(gradDelantero);
+  // -------------------------------------------------------
+  // DEGRADADOS
+  // -------------------------------------------------------
 
-  const gradTrasero = crearElemento('linearGradient', { id: `petaloT-${id}`, x1: '0', y1: '1', x2: '0', y2: '0' });
-  gradTrasero.appendChild(crearElemento('stop', { offset: '0%', 'stop-color': paleta.atras[0] }));
-  gradTrasero.appendChild(crearElemento('stop', { offset: '100%', 'stop-color': paleta.atras[1] }));
-  defs.appendChild(gradTrasero);
+  const defs =
+    crearElemento('defs');
 
-  const gradCentro = crearElemento('radialGradient', { id: `centroGrad-${id}`, cx: '35%', cy: '30%' });
-  gradCentro.appendChild(crearElemento('stop', { offset: '0%', 'stop-color': '#8A5142' }));
-  gradCentro.appendChild(crearElemento('stop', { offset: '55%', 'stop-color': '#5B2F2A' }));
-  gradCentro.appendChild(crearElemento('stop', { offset: '100%', 'stop-color': '#3A1D1C' }));
-  defs.appendChild(gradCentro);
+
+  const gradFrente =
+    crearElemento(
+      'linearGradient',
+      {
+        id: `petaloFrente-${id}`,
+        x1: '0',
+        y1: '1',
+        x2: '0',
+        y2: '0'
+      }
+    );
+
+
+  gradFrente.appendChild(
+    crearElemento(
+      'stop',
+      {
+        offset: '0%',
+        'stop-color':
+          paleta.frente[0]
+      }
+    )
+  );
+
+
+  gradFrente.appendChild(
+    crearElemento(
+      'stop',
+      {
+        offset: '100%',
+        'stop-color':
+          paleta.frente[1]
+      }
+    )
+  );
+
+
+  defs.appendChild(
+    gradFrente
+  );
+
+
+  const gradAtras =
+    crearElemento(
+      'linearGradient',
+      {
+        id: `petaloAtras-${id}`,
+        x1: '0',
+        y1: '1',
+        x2: '0',
+        y2: '0'
+      }
+    );
+
+
+  gradAtras.appendChild(
+    crearElemento(
+      'stop',
+      {
+        offset: '0%',
+        'stop-color':
+          paleta.atras[0]
+      }
+    )
+  );
+
+
+  gradAtras.appendChild(
+    crearElemento(
+      'stop',
+      {
+        offset: '100%',
+        'stop-color':
+          paleta.atras[1]
+      }
+    )
+  );
+
+
+  defs.appendChild(
+    gradAtras
+  );
+
+
+  const gradCentro =
+    crearElemento(
+      'radialGradient',
+      {
+        id: `centro-${id}`,
+        cx: '35%',
+        cy: '30%'
+      }
+    );
+
+
+  gradCentro.appendChild(
+    crearElemento(
+      'stop',
+      {
+        offset: '0%',
+        'stop-color': '#986052'
+      }
+    )
+  );
+
+
+  gradCentro.appendChild(
+    crearElemento(
+      'stop',
+      {
+        offset: '60%',
+        'stop-color': '#5B302A'
+      }
+    )
+  );
+
+
+  gradCentro.appendChild(
+    crearElemento(
+      'stop',
+      {
+        offset: '100%',
+        'stop-color': '#321919'
+      }
+    )
+  );
+
+
+  defs.appendChild(
+    gradCentro
+  );
+
+
   svg.appendChild(defs);
 
-  // ---- Sombra de piso, da sensación de apoyo/profundidad ----
-  const sombra = crearElemento('ellipse', {
-    cx, cy: baseY, rx: anchoTotal * 0.28, ry: 5, class: 'sombra-suelo'
-  });
-  svg.appendChild(sombra);
 
-  // ---- Tallo curvo, ligeramente distinto en cada flor ----
-  const curva = (Math.random() - 0.5) * 16;
-  const dTallo = `M ${cx} ${baseY} C ${cx + curva} ${baseY - altoTallo * 0.6}, ${cx - curva} ${topY + altoTallo * 0.3}, ${cx} ${topY}`;
-  const tallo = crearElemento('path', { d: dTallo, class: 'tallo' });
-  tallo.style.strokeWidth = (4 * escala) + 'px';
+  // -------------------------------------------------------
+  // 🌱 TALLO
+  // -------------------------------------------------------
+
+  const curva =
+    (Math.random() - 0.5) * 14;
+
+
+  const dTallo = `
+    M ${cx} ${baseY}
+    C ${cx + curva} ${baseY - altoTallo * 0.55},
+      ${cx - curva} ${topY + altoTallo * 0.25},
+      ${cx} ${topY}
+  `;
+
+
+  const tallo =
+    crearElemento(
+      'path',
+      {
+        d: dTallo,
+        class: 'tallo'
+      }
+    );
+
+
+  tallo.style.strokeWidth =
+    Math.max(2.5, 4 * escala) + 'px';
+
+
   svg.appendChild(tallo);
 
-  // ---- Hojas ----
-  function crearHoja(y, lado) {
-    const ancho = 26 * escala, alto = 14 * escala;
-    const puntoX = cx + (lado * 3);
+
+  // -------------------------------------------------------
+  // 🍃 HOJAS
+  // -------------------------------------------------------
+
+  function crearHoja(
+    y,
+    lado
+  ) {
+
+    const ancho =
+      25 * escala;
+
+    const alto =
+      13 * escala;
+
+    const x =
+      cx + lado * 3;
+
+
     const d = lado > 0
-      ? `M ${puntoX} ${y} C ${puntoX + ancho * 0.3} ${y - alto}, ${puntoX + ancho} ${y - alto * 0.2}, ${puntoX + ancho * 1.1} ${y} C ${puntoX + ancho} ${y + alto * 0.5}, ${puntoX + ancho * 0.3} ${y + alto * 0.3}, ${puntoX} ${y} Z`
-      : `M ${puntoX} ${y} C ${puntoX - ancho * 0.3} ${y - alto}, ${puntoX - ancho} ${y - alto * 0.2}, ${puntoX - ancho * 1.1} ${y} C ${puntoX - ancho} ${y + alto * 0.5}, ${puntoX - ancho * 0.3} ${y + alto * 0.3}, ${puntoX} ${y} Z`;
-    const hoja = crearElemento('path', { d, class: 'hoja' });
-    hoja.style.transformOrigin = `${puntoX}px ${y}px`;
+
+      ? `
+        M ${x} ${y}
+        C ${x + ancho * 0.35} ${y - alto},
+          ${x + ancho} ${y - alto * 0.2},
+          ${x + ancho * 1.05} ${y}
+        C ${x + ancho} ${y + alto * 0.4},
+          ${x + ancho * 0.3} ${y + alto * 0.3},
+          ${x} ${y}
+        Z
+      `
+
+      : `
+        M ${x} ${y}
+        C ${x - ancho * 0.35} ${y - alto},
+          ${x - ancho} ${y - alto * 0.2},
+          ${x - ancho * 1.05} ${y}
+        C ${x - ancho} ${y + alto * 0.4},
+          ${x - ancho * 0.3} ${y + alto * 0.3},
+          ${x} ${y}
+        Z
+      `;
+
+
+    const hoja =
+      crearElemento(
+        'path',
+        {
+          d,
+          class: 'hoja'
+        }
+      );
+
+
+    hoja.style.transformOrigin =
+      `${x}px ${y}px`;
+
+
     return hoja;
   }
-  const hoja1 = crearHoja(baseY - altoTallo * 0.35, 1);
-  const hoja2 = crearHoja(baseY - altoTallo * 0.6, -1);
+
+
+  const hoja1 =
+    crearHoja(
+      baseY - altoTallo * 0.38,
+      1
+    );
+
+
+  const hoja2 =
+    crearHoja(
+      baseY - altoTallo * 0.62,
+      -1
+    );
+
+
   svg.appendChild(hoja1);
   svg.appendChild(hoja2);
 
-  // ---- Cabeza del girasol ----
-  const cabeza = crearElemento('g', { transform: `translate(${cx}, ${topY})` });
 
-  // Capa trasera: pétalos más grandes y oscuros, desfasados a medio paso
-  // (asoman por detrás de los delanteros → sensación de volumen)
-  const traseros = [];
-  const pasoAngulo = 360 / numPetalos;
-  for (let i = 0; i < numPetalos; i++) {
-    const angulo = pasoAngulo * i + pasoAngulo / 2;
-    const grupo = crearElemento('g', { transform: `rotate(${angulo})` });
-    const petalo = crearElemento('path', {
-      d: formaPetalo(33 * escala, 11 * escala), class: 'petalo-svg', fill: `url(#petaloT-${id})`
-    });
-    petalo.style.transformOrigin = '0px 0px';
+  // -------------------------------------------------------
+  // 🌻 CABEZA
+  // -------------------------------------------------------
+
+  const cabeza =
+    crearElemento(
+      'g',
+      {
+        transform:
+          `translate(${cx}, ${topY})`
+      }
+    );
+
+
+  const paso =
+    360 / numPetalos;
+
+
+  const petalos = [];
+
+
+  // -------------------------------------------------------
+  // PETALOS TRASEROS
+  // -------------------------------------------------------
+
+  for (
+    let i = 0;
+    i < numPetalos;
+    i++
+  ) {
+
+    const angulo =
+      i * paso + paso / 2;
+
+
+    const grupo =
+      crearElemento(
+        'g',
+        {
+          transform:
+            `rotate(${angulo})`
+        }
+      );
+
+
+    const petalo =
+      crearElemento(
+        'path',
+        {
+          d:
+            formaPetalo(
+              32 * escala,
+              10 * escala
+            ),
+
+          class:
+            'petalo-svg',
+
+          fill:
+            `url(#petaloAtras-${id})`
+        }
+      );
+
+
     grupo.appendChild(petalo);
+
     cabeza.appendChild(grupo);
-    traseros.push(petalo);
+
+    petalos.push(petalo);
   }
 
-  // Capa delantera: pétalos más claros y un poco más pequeños, encima
-  const delanteros = [];
-  for (let i = 0; i < numPetalos; i++) {
-    const angulo = pasoAngulo * i;
-    const grupo = crearElemento('g', { transform: `rotate(${angulo})` });
-    const petalo = crearElemento('path', {
-      d: formaPetalo(29 * escala, 9.5 * escala), class: 'petalo-svg', fill: `url(#petaloD-${id})`
-    });
-    petalo.style.transformOrigin = '0px 0px';
+
+  // -------------------------------------------------------
+  // PETALOS DELANTEROS
+  // -------------------------------------------------------
+
+  for (
+    let i = 0;
+    i < numPetalos;
+    i++
+  ) {
+
+    const angulo =
+      i * paso;
+
+
+    const grupo =
+      crearElemento(
+        'g',
+        {
+          transform:
+            `rotate(${angulo})`
+        }
+      );
+
+
+    const petalo =
+      crearElemento(
+        'path',
+        {
+          d:
+            formaPetalo(
+              28 * escala,
+              9 * escala
+            ),
+
+          class:
+            'petalo-svg',
+
+          fill:
+            `url(#petaloFrente-${id})`
+        }
+      );
+
+
     grupo.appendChild(petalo);
-    cabeza.appendChild(grupo);
-    delanteros.push(petalo);
-  }
-  const petalos = [...traseros, ...delanteros];
 
-  // Centro con textura de semillitas + brillo (luz falsa para dar volumen)
-  const centro = crearElemento('g', { class: 'centro-girasol' });
-  centro.style.transformOrigin = '0px 0px';
-  centro.appendChild(crearElemento('circle', { cx: 0, cy: 0, r: 15 * escala, fill: `url(#centroGrad-${id})` }));
-  for (let i = 0; i < 12; i++) {
-    const ang = Math.random() * Math.PI * 2;
-    const rad = Math.random() * 11.5 * escala;
-    centro.appendChild(crearElemento('circle', {
-      cx: Math.cos(ang) * rad, cy: Math.sin(ang) * rad, r: 1.1 * escala, fill: '#2A1B0C'
-    }));
+    cabeza.appendChild(grupo);
+
+    petalos.push(petalo);
   }
-  // pequeño brillo ovalado, como reflejo de luz
-  centro.appendChild(crearElemento('ellipse', {
-    cx: -5 * escala, cy: -6 * escala, rx: 4.5 * escala, ry: 2.5 * escala, fill: 'rgba(255,255,255,0.35)'
-  }));
+
+
+  // -------------------------------------------------------
+  // 🤎 CENTRO
+  // -------------------------------------------------------
+
+  const centro =
+    crearElemento(
+      'g',
+      {
+        class:
+          'centro-girasol'
+      }
+    );
+
+
+  centro.style.transformOrigin =
+    '0 0';
+
+
+  centro.appendChild(
+    crearElemento(
+      'circle',
+      {
+        cx: 0,
+        cy: 0,
+        r: 15 * escala,
+        fill:
+          `url(#centro-${id})`
+      }
+    )
+  );
+
+
+  // -------------------------------------------------------
+  // SEMILLAS
+  // -------------------------------------------------------
+
+  const semillas =
+    CONFIG.movil ? 5 : 7;
+
+
+  for (
+    let i = 0;
+    i < semillas;
+    i++
+  ) {
+
+    const angulo =
+      Math.random() *
+      Math.PI *
+      2;
+
+
+    const radio =
+      Math.random() *
+      10 *
+      escala;
+
+
+    centro.appendChild(
+      crearElemento(
+        'circle',
+        {
+          cx:
+            Math.cos(angulo) *
+            radio,
+
+          cy:
+            Math.sin(angulo) *
+            radio,
+
+          r:
+            Math.max(
+              0.8,
+              1.1 * escala
+            ),
+
+          fill:
+            '#24150C'
+        }
+      )
+    );
+  }
+
+
+  // Pequeño brillo
+  centro.appendChild(
+    crearElemento(
+      'ellipse',
+      {
+        cx: -5 * escala,
+        cy: -6 * escala,
+        rx: 4 * escala,
+        ry: 2.2 * escala,
+        fill:
+          'rgba(255,255,255,0.3)'
+      }
+    )
+  );
+
+
   cabeza.appendChild(centro);
+
   svg.appendChild(cabeza);
 
-  // ---- Contenedor final ----
-  const contenedor = document.createElement('div');
-  contenedor.className = 'girasol';
-  contenedor.style.setProperty('--duracion', (3.5 + Math.random() * 2) + 's');
+
+  // -------------------------------------------------------
+  // CONTENEDOR
+  // -------------------------------------------------------
+
+  const contenedor =
+    document.createElement('div');
+
+
+  contenedor.className =
+    'girasol';
+
+
+  contenedor.style.setProperty(
+    '--duracion',
+    (
+      CONFIG.duracionBalanceo +
+      Math.random() * 1.5
+    ) + 's'
+  );
+
+
   contenedor.appendChild(svg);
 
-  // ---- Medir el tallo real para animar su trazo ----
-  const largoTallo = tallo.getTotalLength();
-  tallo.style.strokeDasharray = largoTallo;
-  tallo.style.strokeDashoffset = largoTallo;
 
-  // ---- Función que hace florecer este girasol paso a paso ----
+  // -------------------------------------------------------
+  // ANIMACIÓN DEL TALLO
+  // -------------------------------------------------------
+
+  let longitudTallo = 0;
+
+
+  try {
+
+    longitudTallo =
+      tallo.getTotalLength();
+
+  } catch {
+
+    longitudTallo = 100;
+
+  }
+
+
+  tallo.style.strokeDasharray =
+    longitudTallo;
+
+
+  tallo.style.strokeDashoffset =
+    longitudTallo;
+
+
+  // -------------------------------------------------------
+  // 🌱 FLORECER
+  // -------------------------------------------------------
+
   function florecer() {
-    requestAnimationFrame(() => { tallo.style.strokeDashoffset = 0; });
 
-    setTimeout(() => { hoja1.classList.add('mostrar'); }, 500);
-    setTimeout(() => { hoja2.classList.add('mostrar'); }, 700);
+    requestAnimationFrame(() => {
 
-    petalos.forEach((petalo, i) => {
-      setTimeout(() => petalo.classList.add('mostrar'), 1100 + i * 35);
+      tallo.style.strokeDashoffset =
+        '0';
+
     });
 
+
+    // Primera hoja
     setTimeout(() => {
-      centro.classList.add('mostrar');
-      contenedor.classList.add('balanceo');
-    }, 1100 + petalos.length * 35 + 250);
+
+      hoja1.classList.add(
+        'mostrar'
+      );
+
+    }, 350);
+
+
+    // Segunda hoja
+    setTimeout(() => {
+
+      hoja2.classList.add(
+        'mostrar'
+      );
+
+    }, 500);
+
+
+    // Pétalos
+    const retraso =
+      CONFIG.movil
+        ? 18
+        : 25;
+
+
+    petalos.forEach(
+      (petalo, indice) => {
+
+        setTimeout(() => {
+
+          petalo.classList.add(
+            'mostrar'
+          );
+
+        }, 650 + indice * retraso);
+
+      }
+    );
+
+
+    // Centro
+    setTimeout(() => {
+
+      centro.classList.add(
+        'mostrar'
+      );
+
+
+      contenedor.classList.add(
+        'balanceo'
+      );
+
+    }, 650 + petalos.length * retraso + 150);
+
   }
 
-  return { contenedor, florecer };
+
+  return {
+    contenedor,
+    florecer
+  };
 }
 
+
 // =========================================================
-// PORTADA: un girasol ya florecido, de bienvenida
+// 🌻 FLOR PRINCIPAL DE LA PORTADA
 // =========================================================
-const florPortada = document.getElementById('florPortada');
-const { contenedor: girasolPortada, florecer: florecerPortada } = crearGirasol(110, 65, 13, 1.5,
-  { frente: ['#F5B233', '#FFE58A'], atras: ['#C97A1B', '#E8992A'] }
+
+const florPortada =
+  document.getElementById(
+    'florPortada'
+  );
+
+
+const portadaGirasol =
+  crearGirasol(
+    110,
+    65,
+    13,
+    1.5,
+    {
+      frente: [
+        '#F5B233',
+        '#FFE58A'
+      ],
+
+      atras: [
+        '#C97A1B',
+        '#E8992A'
+      ]
+    }
+  );
+
+
+florPortada.appendChild(
+  portadaGirasol.contenedor
 );
-florPortada.appendChild(girasolPortada);
-setTimeout(florecerPortada, 200);
+
+
+setTimeout(
+  portadaGirasol.florecer,
+  200
+);
+
 
 // =========================================================
-// JARDÍN: florece solo, sin necesidad de hacer clic
-// Es el protagonista de la página: MUCHOS girasoles, de
-// tamaños variados (grandes al frente, chiquitos atrás),
-// bien juntos para que se sienta lleno y tupido.
+// 🌻 JARDÍN
 // =========================================================
-const jardin = document.getElementById('jardin');
 
-// Paleta netamente amarilla: varía entre dorado fuerte, amarillo
-// pálido y ámbar, para que no se vean todas idénticas pero sí
-// claramente amarillas
+const jardin =
+  document.getElementById(
+    'jardin'
+  );
+
+
 const paletasAmarillas = [
-  { frente: ['#F5B233', '#FFE58A'], atras: ['#C97A1B', '#E8992A'] },
-  { frente: ['#F7C948', '#FFF3B0'], atras: ['#D98A2B', '#F0B94A'] },
-  { frente: ['#EFA429', '#FBD34D'], atras: ['#B5730E', '#DB9A2E'] },
-  { frente: ['#FFCB4D', '#FFF6D2'], atras: ['#D9A62B', '#F2C766'] },
+
+  {
+    frente: [
+      '#F5B233',
+      '#FFE58A'
+    ],
+
+    atras: [
+      '#C97A1B',
+      '#E8992A'
+    ]
+  },
+
+  {
+    frente: [
+      '#F7C948',
+      '#FFF3B0'
+    ],
+
+    atras: [
+      '#D98A2B',
+      '#F0B94A'
+    ]
+  },
+
+  {
+    frente: [
+      '#EFA429',
+      '#FBD34D'
+    ],
+
+    atras: [
+      '#B5730E',
+      '#DB9A2E'
+    ]
+  },
+
+  {
+    frente: [
+      '#FFCB4D',
+      '#FFF6D2'
+    ],
+
+    atras: [
+      '#D9A62B',
+      '#F2C766'
+    ]
+  }
+
 ];
 
-// Genera 3 "capas de profundidad" (fondo, medio, frente), cada
-// una repartida a lo ANCHO de la misma franja (no en filas nuevas
-// hacia abajo). Las de fondo son chiquitas, borrosas y quedan más
-// arriba (como si estuvieran más lejos); las de frente son grandes,
-// nítidas y quedan abajo, tapando a las de atrás. 100 en total.
-const capasConfig = {
-  fondo:  { cantidad: 54, alturaBase: 90,  alturaVar: 40, escalaBase: 0.95, escalaVar: 0.3,  ancho: 110, abajoPx: 26, blur: 1.6, opacidad: 0.8,  zBase: 1   },
-  medio:  { cantidad: 34, alturaBase: 160, alturaVar: 55, escalaBase: 1.7,  escalaVar: 0.35, ancho: 170, abajoPx: 12, blur: 0.6, opacidad: 0.92, zBase: 100 },
-  frente: { cantidad: 10, alturaBase: 230, alturaVar: 60, escalaBase: 2.4,  escalaVar: 0.45, ancho: 230, abajoPx: 0,  blur: 0,   opacidad: 1,    zBase: 200 },
-};
 
-const girasolesJardin = [];
+// =========================================================
+// CAPAS DEL JARDÍN
+// =========================================================
 
-// Importante: se dibujan en este orden (fondo → medio → frente)
-// para que las de adelante queden pintadas encima de las de atrás.
-for (const nombreCapa of ['fondo', 'medio', 'frente']) {
-  const { cantidad, alturaBase, alturaVar, escalaBase, escalaVar, ancho, abajoPx, blur, opacidad, zBase } = capasConfig[nombreCapa];
+const capasConfig = CONFIG.movil
 
-  for (let i = 0; i < cantidad; i++) {
-    const altura = alturaBase + Math.random() * alturaVar;
-    const escala = escalaBase + Math.random() * escalaVar;
-    const paleta = paletasAmarillas[Math.floor(Math.random() * paletasAmarillas.length)];
-    const numPetalos = escala > 1.2 ? 12 + Math.floor(Math.random() * 3) : 9 + Math.floor(Math.random() * 3);
-    const g = crearGirasol(ancho, altura, numPetalos, escala, paleta);
+  ? {
 
-    // Posición horizontal: repartidas a lo ancho de TODA la franja,
-    // con un poco de desorden para que no se vea en cuadrícula
-    const xPorcentaje = ((i + 0.5) / cantidad) * 100 + (Math.random() * 6 - 3);
+      fondo: {
 
-    g.contenedor.style.position = 'absolute';
-    g.contenedor.style.left = `calc(${xPorcentaje}% - ${ancho / 2}px)`;
-    g.contenedor.style.bottom = abajoPx + 'px';
-    g.contenedor.style.filter = `blur(${blur}px)`;
-    g.contenedor.style.opacity = opacidad;
-    g.contenedor.style.zIndex = zBase + i;
+        cantidad: 10,
 
-    girasolesJardin.push(g);
+        alturaBase: 85,
+
+        alturaVar: 30,
+
+        escalaBase: 0.75,
+
+        escalaVar: 0.2,
+
+        ancho: 95,
+
+        abajoPx: 25,
+
+        opacidad: 0.7,
+
+        zBase: 1,
+
+        petalos:
+          CONFIG.petalosFondo
+
+      },
+
+
+      medio: {
+
+        cantidad: 8,
+
+        alturaBase: 140,
+
+        alturaVar: 40,
+
+        escalaBase: 1.25,
+
+        escalaVar: 0.25,
+
+        ancho: 145,
+
+        abajoPx: 10,
+
+        opacidad: 0.88,
+
+        zBase: 50,
+
+        petalos:
+          CONFIG.petalosMedio
+
+      },
+
+
+      frente: {
+
+        cantidad: 4,
+
+        alturaBase: 205,
+
+        alturaVar: 40,
+
+        escalaBase: 1.9,
+
+        escalaVar: 0.3,
+
+        ancho: 205,
+
+        abajoPx: 0,
+
+        opacidad: 1,
+
+        zBase: 100,
+
+        petalos:
+          CONFIG.petalosFrente
+
+      }
+
+    }
+
+  : {
+
+      fondo: {
+
+        cantidad: 30,
+
+        alturaBase: 90,
+
+        alturaVar: 35,
+
+        escalaBase: 0.85,
+
+        escalaVar: 0.25,
+
+        ancho: 105,
+
+        abajoPx: 25,
+
+        opacidad: 0.72,
+
+        zBase: 1,
+
+        petalos:
+          CONFIG.petalosFondo
+
+      },
+
+
+      medio: {
+
+        cantidad: 20,
+
+        alturaBase: 150,
+
+        alturaVar: 50,
+
+        escalaBase: 1.45,
+
+        escalaVar: 0.3,
+
+        ancho: 155,
+
+        abajoPx: 10,
+
+        opacidad: 0.9,
+
+        zBase: 50,
+
+        petalos:
+          CONFIG.petalosMedio
+
+      },
+
+
+      frente: {
+
+        cantidad: 10,
+
+        alturaBase: 220,
+
+        alturaVar: 55,
+
+        escalaBase: 2.1,
+
+        escalaVar: 0.35,
+
+        ancho: 215,
+
+        abajoPx: 0,
+
+        opacidad: 1,
+
+        zBase: 100,
+
+        petalos:
+          CONFIG.petalosFrente
+
+      }
+
+    };
+
+
+// =========================================================
+// 🌱 CREAR FLORES POR TANDAS
+// =========================================================
+
+const flores =
+  [];
+
+
+// Crear primero las configuraciones
+// para evitar un golpe fuerte al navegador.
+
+for (
+  const nombreCapa of [
+    'fondo',
+    'medio',
+    'frente'
+  ]
+) {
+
+  const capa =
+    capasConfig[
+      nombreCapa
+    ];
+
+
+  for (
+    let i = 0;
+    i < capa.cantidad;
+    i++
+  ) {
+
+    const altura =
+      capa.alturaBase +
+      Math.random() *
+      capa.alturaVar;
+
+
+    const escala =
+      capa.escalaBase +
+      Math.random() *
+      capa.escalaVar;
+
+
+    const paleta =
+      paletasAmarillas[
+        Math.floor(
+          Math.random() *
+          paletasAmarillas.length
+        )
+      ];
+
+
+    const girasol =
+      crearGirasol(
+        capa.ancho,
+        altura,
+        capa.petalos,
+        escala,
+        paleta
+      );
+
+
+    // Posición horizontal
+    const porcentaje =
+      ((i + 0.5) /
+        capa.cantidad) *
+      100 +
+      (Math.random() * 5 - 2.5);
+
+
+    girasol.contenedor.style.position =
+      'absolute';
+
+
+    girasol.contenedor.style.left =
+      `calc(${porcentaje}% - ${capa.ancho / 2}px)`;
+
+
+    girasol.contenedor.style.bottom =
+      capa.abajoPx + 'px';
+
+
+    girasol.contenedor.style.opacity =
+      capa.opacidad;
+
+
+    girasol.contenedor.style.zIndex =
+      capa.zBase + i;
+
+
+    flores.push(
+      girasol
+    );
+
   }
 }
 
-girasolesJardin.forEach(({ contenedor }) => jardin.appendChild(contenedor));
-
-// Florecen uno tras otro, rapidito porque son muchas
-girasolesJardin.forEach(({ florecer }, i) => {
-  setTimeout(florecer, 200 + i * 40);
-});
 
 // =========================================================
-// POLEN: puntitos de luz que suben lentamente desde el jardín,
-// puro decorado para que el jardín se sienta vivo
+// 📦 INSERTAR LAS FLORES
 // =========================================================
-const contenedorPolen = document.getElementById('polen');
+
+const fragmento =
+  document.createDocumentFragment();
+
+
+flores.forEach(
+  flor => {
+
+    fragmento.appendChild(
+      flor.contenedor
+    );
+
+  }
+);
+
+
+jardin.appendChild(
+  fragmento
+);
+
+
+// =========================================================
+// 🌱 HACER FLORECER
+// =========================================================
+
+// No hacemos que todas florezcan
+// exactamente al mismo tiempo.
+
+const retrasoFlores =
+  CONFIG.movil
+    ? 100
+    : 70;
+
+
+flores.forEach(
+  (
+    flor,
+    indice
+  ) => {
+
+    setTimeout(
+      flor.florecer,
+      250 +
+      indice *
+      retrasoFlores
+    );
+
+  }
+);
+
+
+// =========================================================
+// ✨ POLEN
+// =========================================================
+
+const contenedorPolen =
+  document.getElementById(
+    'polen'
+  );
+
 
 function crearMotaPolen() {
-  const mota = document.createElement('div');
-  mota.className = 'mota-polen';
-  mota.style.left = (10 + Math.random() * 80) + 'vw';
-  mota.style.setProperty('--deriva', (Math.random() * 60 - 30) + 'px');
-  const duracion = 6 + Math.random() * 5;
-  mota.style.animationDuration = duracion + 's';
-  contenedorPolen.appendChild(mota);
-  setTimeout(() => mota.remove(), duracion * 1000);
+
+  // En móviles evitamos acumular demasiadas partículas.
+  if (
+    CONFIG.movil &&
+    contenedorPolen.children.length >= 5
+  ) {
+    return;
+  }
+
+
+  if (
+    !CONFIG.movil &&
+    contenedorPolen.children.length >= 10
+  ) {
+    return;
+  }
+
+
+  const mota =
+    document.createElement(
+      'div'
+    );
+
+
+  mota.className =
+    'mota-polen';
+
+
+  mota.style.left =
+    (
+      10 +
+      Math.random() * 80
+    ) + 'vw';
+
+
+  mota.style.setProperty(
+    '--deriva',
+    (
+      Math.random() * 50 -
+      25
+    ) + 'px'
+  );
+
+
+  const duracion =
+    CONFIG.movil
+      ? 8 + Math.random() * 4
+      : 6 + Math.random() * 4;
+
+
+  mota.style.animationDuration =
+    duracion + 's';
+
+
+  contenedorPolen.appendChild(
+    mota
+  );
+
+
+  setTimeout(() => {
+
+    mota.remove();
+
+  }, duracion * 1000);
+
 }
 
-// Suelta una motita nueva cada cierto tiempo, de forma continua
-setInterval(crearMotaPolen, 500);
+
+setInterval(
+  crearMotaPolen,
+  CONFIG.intervaloPolen
+);
+
 
 // =========================================================
-// Abrir la tarjeta: pasa de "portada" a "mensaje"
+// 💌 ABRIR MENSAJE
 // =========================================================
-const portada = document.getElementById('portada');
-const mensaje = document.getElementById('mensaje');
-const botonAbrir = document.getElementById('botonAbrir');
 
-botonAbrir.addEventListener('click', () => {
-  portada.style.display = 'none';
-  mensaje.classList.add('visible');
+const portada =
+  document.getElementById(
+    'portada'
+  );
 
-  const lineas = mensaje.querySelectorAll('.linea, .firma');
-  lineas.forEach((el, index) => {
-    el.style.animationDelay = (index * 0.35) + 's';
-  });
-});
+
+const mensaje =
+  document.getElementById(
+    'mensaje'
+  );
+
+
+const botonAbrir =
+  document.getElementById(
+    'botonAbrir'
+  );
+
+
+botonAbrir.addEventListener(
+  'click',
+  () => {
+
+    // Ocultar portada
+    portada.style.display =
+      'none';
+
+
+    // Mostrar mensaje
+    mensaje.classList.add(
+      'visible'
+    );
+
+
+    // Animar cada línea
+    const lineas =
+      mensaje.querySelectorAll(
+        '.linea, .firma'
+      );
+
+
+    lineas.forEach(
+      (
+        elemento,
+        indice
+      ) => {
+
+        elemento.style.animationDelay =
+          (
+            indice * 0.35
+          ) + 's';
+
+      }
+    );
+
+  }
+);
+
+
+// =========================================================
+// ♿ REDUCIR ANIMACIONES
+// =========================================================
+
+const prefiereMenosMovimiento =
+  window.matchMedia(
+    '(prefers-reduced-motion: reduce)'
+  ).matches;
+
+
+if (
+  prefiereMenosMovimiento
+) {
+
+  document
+    .querySelectorAll(
+      '.girasol'
+    )
+    .forEach(
+      flor => {
+
+        flor.classList.remove(
+          'balanceo'
+        );
+
+      }
+    );
+
+}
+
+
+// =========================================================
+// 📊 INFORMACIÓN EN CONSOLA
+// =========================================================
+
+console.log(
+  '🌻 Jardín cargado:',
+  CONFIG.floresJardin,
+  'flores |',
+  CONFIG.movil
+    ? '📱 Modo móvil'
+    : '💻 Modo PC'
+);
